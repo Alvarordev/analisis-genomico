@@ -24,7 +24,9 @@ EJECUTABLE = genomica
 OBJETOS = build/main.o \
           build/LectorFasta.o \
           build/TablaHashSecuencias.o \
-          build/TablaHashKmers.o
+          build/TablaHashKmers.o \
+          build/MaxHeap.o \
+          build/GrafoADN.o
 
 # Regla principal: para crear el ejecutable se necesitan todos los .o
 $(EJECUTABLE): $(OBJETOS)

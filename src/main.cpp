@@ -1,14 +1,19 @@
 // =============================================================================
 // main.cpp  —  Menú principal
 // =============================================================================
-// Desde aquí se llaman todas las partes del proyecto.
-// Por ahora: parte a (parser) y parte b (tablas hash 1 y 2).
+// PARTE E: interfaz de texto. Desde aquí se llaman todas las partes:
+//   a) parser FASTA            -> LectorFasta
+//   b) tablas hash 1 y 2       -> TablaHashSecuencias, TablaHashKmers
+//   c) max-heap                -> MaxHeap
+//   d) grafo de 2-mers         -> GrafoADN
 // =============================================================================
 #include <iostream>
 #include <string>
 #include <vector>
 
+#include "GrafoADN.h"
 #include "LectorFasta.h"
+#include "MaxHeap.h"
 #include "SecuenciaADN.h"
 #include "TablaHashKmers.h"
 #include "TablaHashSecuencias.h"
@@ -130,6 +135,67 @@ void buscarKmer(TablaHashKmers& tablaKmers) {
     cout << kmer << " aparece " << tablaKmers.buscar(kmer) << " veces." << endl;
 }
 
+// Opción 7 (parte c): los n k-mers más frecuentes usando el max-heap.
+void mostrarMasFrecuentes(TablaHashKmers& tablaKmers) {
+    int n = leerEntero("Cuantos k-mers quieres ver (n): ");
+    if (n <= 0) {
+        cout << "n debe ser un numero mayor que 0." << endl;
+        return;
+    }
+
+    // Se arma el heap con todos los pares (k-mer, conteo) de la tabla 2.
+    MaxHeap heap(tablaKmers.obtenerKmers());
+    vector<KmerConteo> mejores = heap.topN(n);
+
+    cout << "Los " << mejores.size() << " " << tablaKmers.getK()
+         << "-mers mas frecuentes (de " << heap.getTamano() << " distintos):" << endl;
+    for (int i = 0; i < (int) mejores.size(); i++) {
+        cout << "  " << (i + 1) << ". " << mejores[i].kmer
+             << "  ->  " << mejores[i].conteo << endl;
+    }
+}
+
+// Opción 8 (parte d): grafo de 2-mers y su matriz de adyacencia.
+// Se puede usar una secuencia de la tabla 1 o escribir una a mano (por
+// ejemplo la del enunciado: TCATTAGCAGTTAGCAGC).
+void mostrarGrafo(TablaHashSecuencias& tablaSecuencias) {
+    string texto = leerTexto("ID de la secuencia (o escribe una secuencia de ADN): ");
+
+    string secuencia;
+    SecuenciaADN* encontrada = tablaSecuencias.buscar(texto);
+    if (encontrada != nullptr) {
+        secuencia = encontrada->secuencia;
+    } else {
+        secuencia = aMayusculas(texto);
+    }
+    if (secuencia.size() < 2) {
+        cout << "La secuencia debe tener al menos 2 bases." << endl;
+        return;
+    }
+
+    string textoBeta = leerTexto("Valor de beta [1]: ");
+    double beta = 1.0;
+    if (!textoBeta.empty()) {
+        try {
+            beta = stod(textoBeta);  // stod = Double.parseDouble de Java
+        } catch (...) {
+            cout << "Beta no valido." << endl;
+            return;
+        }
+    }
+
+    GrafoADN grafo(secuencia, beta);
+
+    // La tabla de pares solo se muestra si es corta, para no llenar la pantalla.
+    if (grafo.getCantidadPares() <= 30) {
+        grafo.imprimirPares();
+        cout << endl;
+    } else {
+        cout << "Pares de nucleotidos: " << grafo.getCantidadPares() << endl;
+    }
+    grafo.imprimirMatriz();
+}
+
 void mostrarMenu() {
     cout << endl;
     cout << "===== Mini sistema de analisis genomico =====" << endl;
@@ -139,6 +205,8 @@ void mostrarMenu() {
     cout << " 4. Construir tabla hash 2 (k-mers de una secuencia)" << endl;
     cout << " 5. Mostrar tabla hash 2" << endl;
     cout << " 6. Buscar un k-mer" << endl;
+    cout << " 7. Ver los n k-mers mas frecuentes (max-heap)" << endl;
+    cout << " 8. Grafo de 2-mers y matriz de adyacencia" << endl;
     cout << " 0. Salir" << endl;
 }
 
@@ -171,13 +239,14 @@ int main(int argc, char* argv[]) {
             opcion = 0;
         }
 
-        // Las opciones 2 a 6 necesitan que ya haya un archivo cargado.
-        if (opcion >= 2 && opcion <= 6 && !hayArchivo) {
+        // Las opciones 2 a 7 necesitan que ya haya un archivo cargado.
+        // (La 8 no, porque se puede escribir la secuencia a mano.)
+        if (opcion >= 2 && opcion <= 7 && !hayArchivo) {
             cout << "Primero carga un archivo FASTA (opcion 1)." << endl;
             continue;
         }
-        // Las opciones 5 y 6 necesitan la tabla de k-mers.
-        if ((opcion == 5 || opcion == 6) && tablaKmers.getK() == 0) {
+        // Las opciones 5, 6 y 7 necesitan la tabla de k-mers.
+        if (opcion >= 5 && opcion <= 7 && tablaKmers.getK() == 0) {
             cout << "Primero construye la tabla de k-mers (opcion 4)." << endl;
             continue;
         }
@@ -212,6 +281,12 @@ int main(int argc, char* argv[]) {
                 break;
             case 6:
                 buscarKmer(tablaKmers);
+                break;
+            case 7:
+                mostrarMasFrecuentes(tablaKmers);
+                break;
+            case 8:
+                mostrarGrafo(tablaSecuencias);
                 break;
             case 0:
                 cout << "Hasta luego." << endl;
