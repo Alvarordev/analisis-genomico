@@ -14,6 +14,10 @@
 //   4. Si el mismo arco (u, v) aparece varias veces (porque u o v se repiten
 //      en la secuencia), los pesos se SUMAN en un solo arco.
 //   5. Pueden existir lazos (u, u): por ejemplo AG en las posiciones 5 y 7.
+//   6. Los pares con letras ambiguas (R, Y, N, ...) no son vértices y se
+//      saltan, pero su posición se sigue contando. Ejemplo:
+//        AT RG CA  ->  AT(1) y CA(3) son vértices; w(AT, CA) = 1/(3-1)
+//      Si se borraran, CA pasaría a la posición 2 y la distancia sería falsa.
 //
 // Representación: matriz de adyacencia n x n (n = número de vértices).
 //   matriz[a][b] = peso del arco del vértice a al vértice b (0 si no hay arco).
@@ -57,6 +61,9 @@ private:
     std::vector<std::string> pares;     // Los pares en orden: TC, AT, TA, ...
     std::vector<std::string> vertices;  // Pares distintos, en orden de aparición
     std::vector<std::vector<double>> matriz;  // Matriz de adyacencia (vector de vectores)
+
+    // ¿El par tiene solo A, C, G o T?
+    static bool esParValido(std::string par);
 
     // Devuelve el índice del vértice en la lista "vertices", o -1 si no está.
     int indiceDe(std::string par);

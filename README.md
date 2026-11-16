@@ -48,8 +48,13 @@ src/
 
 ### a) Parser FASTA
 - Una línea que empieza con `>` inicia un registro. El ID es el primer token después de `>`.
-- La secuencia puede ocupar varias líneas. Se pasa a mayúsculas y se le quitan los
-  espacios y los gaps de alineamiento (`-`, `.`).
+- La secuencia puede ocupar varias líneas. Se pasa a mayúsculas y **solo se conservan
+  las letras**. Se descartan espacios, gaps de alineamiento (`-`, `.`), números y
+  cualquier otro símbolo.
+- Las letras ambiguas de IUPAC (`R` = A/G, `Y` = C/T, `N` = cualquiera, etc.) se
+  conservan en la secuencia. La tabla de k-mers y el grafo saltan las ventanas o pares
+  que las contienen. No se eliminan porque, si se borraran, las bases de los lados
+  quedarían juntas y aparecerían k-mers o distancias que no existen en la secuencia real.
 - Se ignoran las líneas vacías y las que empiezan con `;`.
 
 ### b) Tabla hash 1: ID → secuencia (linear probing)
@@ -80,6 +85,8 @@ src/
 - Para **cada par de posiciones i < j** hay un arco dirigido desde el par i hacia el par j,
   con peso `w = 1 / (j − i)^β`.
 - Si un arco (u, v) se repite, sus pesos se **suman**. Se permiten lazos (u, u).
+- Los pares con letras ambiguas (`R`, `Y`, `N`, …) no son vértices, pero su posición se
+  sigue contando. Así la distancia `j − i` entre los pares válidos es la real.
 - Se representa con una matriz de adyacencia V×V.
 - Ejemplo del enunciado (`TCATTAGCAGTTAGCAGC`, β = 1): `w(TC,AT) = 1` y
   `w(AT,CA) = 0.1667`.

@@ -72,14 +72,19 @@ vector<SecuenciaADN> LectorFasta::leerArchivo(string ruta) {
     return secuencias;
 }
 
+// Solo se aceptan LETRAS. Todo lo demás se descarta: espacios, gaps de
+// alineamiento ('-' y '.'), números, '*', '?', etc.
+// Las letras ambiguas como R, Y o N SÍ se guardan: más adelante la tabla de
+// k-mers y el grafo saltan las ventanas/pares que las contienen.
 string LectorFasta::limpiarLinea(string linea) {
     string resultado = "";
     // "for (char c : linea)" es el for-each de Java: for (char c : texto)
     for (char c : linea) {
-        if (isspace(c) || c == '-' || c == '.') {
-            continue;  // Ignoramos espacios y gaps de alineamiento
+        // isalpha(c) es como Character.isLetter(c) de Java (solo letras sin
+        // tilde). El (unsigned char) evita un error con caracteres no ASCII.
+        if (isalpha((unsigned char) c)) {
+            resultado += (char) toupper((unsigned char) c);  // En mayúscula
         }
-        resultado += (char) toupper(c);  // Guardamos la letra en mayúscula
     }
     return resultado;
 }

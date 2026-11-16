@@ -32,7 +32,8 @@ public:  // En C++ se escribe "public:" una vez y aplica a todo lo de abajo.
     static std::vector<SecuenciaADN> leerArchivo(std::string ruta);
 
 private:
-    // Quita espacios y gaps ('-' y '.') de una línea y la pasa a mayúsculas.
+    // Deja solo las letras de una línea y las pasa a mayúsculas.
+    // (Quita espacios, gaps '-' y '.', números y cualquier otro símbolo.)
     static std::string limpiarLinea(std::string linea);
 };
 

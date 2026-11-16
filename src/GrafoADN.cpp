@@ -22,9 +22,17 @@ GrafoADN::GrafoADN(string secuencia, double beta) : beta(beta) {
     // ---- Paso 2: crear los vértices (pares distintos) ----
     // Guardamos en "indices" el número de vértice que le toca a cada posición,
     // para no tener que buscarlo otra vez dentro del doble for.
+    // Los pares con letras que no son A, C, G o T (como R, Y o N) NO se
+    // convierten en vértices: se marcan con -1 y se saltan. Su posición se
+    // sigue contando, así la distancia (j - i) entre los pares válidos es la
+    // distancia real en la secuencia.
     vector<int> indices;
     for (string par : pares) {
-        indices.push_back(agregarVertice(par));
+        if (esParValido(par)) {
+            indices.push_back(agregarVertice(par));
+        } else {
+            indices.push_back(-1);
+        }
     }
 
     // Matriz n x n llena de ceros.
@@ -37,13 +45,28 @@ GrafoADN::GrafoADN(string secuencia, double beta) : beta(beta) {
     // como solo usamos la diferencia (j - i), el resultado es el mismo.
     int cantidadPares = pares.size();
     for (int i = 0; i < cantidadPares; i++) {
+        if (indices[i] == -1) {
+            continue;  // Par inválido: no sale ningún arco desde aquí
+        }
         for (int j = i + 1; j < cantidadPares; j++) {
+            if (indices[j] == -1) {
+                continue;  // Par inválido: no llega ningún arco aquí
+            }
             double peso = 1.0 / pow(j - i, beta);
             int u = indices[i];
             int v = indices[j];
             matriz[u][v] += peso;  // Si el arco ya existía, se suma
         }
     }
+}
+
+bool GrafoADN::esParValido(string par) {
+    for (char c : par) {
+        if (c != 'A' && c != 'C' && c != 'G' && c != 'T') {
+            return false;
+        }
+    }
+    return true;
 }
 
 int GrafoADN::indiceDe(string par) {
@@ -77,7 +100,11 @@ double GrafoADN::getPeso(string u, string v) {
 void GrafoADN::imprimirPares() {
     cout << left << setw(10) << "Posicion" << "2-mer" << endl;
     for (int i = 0; i < (int) pares.size(); i++) {
-        cout << left << setw(10) << (i + 1) << pares[i] << endl;
+        cout << left << setw(10) << (i + 1) << pares[i];
+        if (!esParValido(pares[i])) {
+            cout << "   (se salta: no es A/C/G/T)";
+        }
+        cout << endl;
     }
 }
 
