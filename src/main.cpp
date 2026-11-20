@@ -4,6 +4,7 @@
 #include "maxHeap/MaxHeap.h"
 #include "modoGUI/ModoGUI.h"
 #include "parser/LectorFasta.h"
+#include <cctype>
 #include <iostream>
 #include <string>
 #include <vector>

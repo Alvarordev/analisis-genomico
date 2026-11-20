@@ -1,3 +1,8 @@
 build/
 genomica
 __pycache__/
+obj/
+bin/
+*.exe
+*.depend
+*.layout

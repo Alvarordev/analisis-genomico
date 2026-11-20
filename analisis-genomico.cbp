@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="analisis-genomico" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release">
+				<Option output="genomica" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="." />
+				<Option parameters="data/HIV2_ALL_2021_env_DNA.2000.fasta" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Debug">
+				<Option output="genomica" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="." />
+				<Option parameters="data/HIV2_ALL_2021_env_DNA.2000.fasta" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-std=c++17" />
+			<Add option="-Wall" />
+		</Compiler>
+		<Linker>
+			<Add option="-static" />
+		</Linker>
+		<Unit filename="src/main.cpp" />
+		<Unit filename="src/parser/SecuenciaADN.h" />
+		<Unit filename="src/parser/LectorFasta.h" />
+		<Unit filename="src/parser/LectorFasta.cpp" />
+		<Unit filename="src/linearProbing/TablaHash.h" />
+		<Unit filename="src/linearProbing/TablaHash.cpp" />
+		<Unit filename="src/doubleHashing/TablaKmers.h" />
+		<Unit filename="src/doubleHashing/TablaKmers.cpp" />
+		<Unit filename="src/maxHeap/MaxHeap.h" />
+		<Unit filename="src/maxHeap/MaxHeap.cpp" />
+		<Unit filename="src/grafo/GrafoADN.h" />
+		<Unit filename="src/grafo/GrafoADN.cpp" />
+		<Unit filename="src/modoGUI/ModoGUI.h" />
+		<Unit filename="src/modoGUI/ModoGUI.cpp" />
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>

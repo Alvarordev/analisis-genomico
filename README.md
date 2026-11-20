@@ -5,45 +5,99 @@ analiza usando tablas hash, un max-heap y un grafo de 2-mers.
 
 ## Cómo correr el proyecto
 
-### 1. Requisitos
+El proyecto se puede compilar de tres formas: **Code::Blocks** (Windows, recomendado),
+los scripts **`.bat`** (Windows, sin abrir Code::Blocks) o **`make`** (Linux / macOS).
+En todos los casos se genera el ejecutable `genomica.exe` (o `genomica`) en la carpeta
+raíz del proyecto, que es donde lo busca la interfaz gráfica.
 
-- `g++` con soporte para C++17 y `make`.
-- Para la interfaz gráfica: `python3` con `tkinter` (viene incluido en Python; en
-  Ubuntu/Debian, si falta: `sudo apt install python3-tk`).
+### Windows
 
-### 2. Compilar
+#### 1. Instalar
 
-Desde la carpeta raíz del proyecto:
+| Programa | Para qué | Dónde |
+|---|---|---|
+| **Code::Blocks con MinGW** | Editor + compilador `g++` | <https://www.codeblocks.org/downloads/binaries/> → elegir el instalador que termina en **`mingw-setup.exe`** (por ejemplo `codeblocks-25.03mingw-setup.exe`). Ese incluye el compilador; el que no dice `mingw` no lo trae. |
+| **Python 3** (solo para la interfaz gráfica) | Ventana Tkinter | <https://www.python.org/downloads/> → en el instalador marcar **"Add python.exe to PATH"**. Tkinter viene incluido. |
 
-```bash
-make
+Python también se puede instalar desde una terminal (PowerShell):
+
+```powershell
+winget install -e --id Python.Python.3.12
 ```
 
-Se genera el ejecutable `./genomica`. Los archivos intermedios quedan en `build/`.
+Para comprobar que quedaron instalados, en una terminal nueva:
 
-### 3. Ejecutar
-
-**Menú de texto**, con el archivo de HIV del curso ya cargado:
-
-```bash
-make run
+```powershell
+g++ --version      # solo funciona si MinGW está en el PATH (ver paso 3, opción B)
+python --version
 ```
 
-Es lo mismo que `./genomica data/HIV2_ALL_2021_env_DNA.2000.fasta`. Para usar otro
-archivo: `./genomica ruta/archivo.fasta`. Sin argumentos (`./genomica`) el programa
-empieza vacío y el archivo se carga con la opción 1 (Enter usa el archivo de `data/`).
+#### 2. Opción A: Code::Blocks (recomendado)
 
-**Interfaz gráfica:**
+1. Abrir Code::Blocks → **File → Open…** → elegir **`analisis-genomico.cbp`** (en la raíz del proyecto).
+2. En la barra de herramientas, dejar el target **Release** (o **Debug**).
+3. **Build → Build and run** (tecla **F9**).
 
-```bash
-make gui
+Se abre una consola con el menú y el archivo `data\HIV2_ALL_2021_env_DNA.2000.fasta`
+ya cargado (el proyecto lo pasa como argumento y usa la carpeta del proyecto como
+directorio de trabajo).
+
+- El proyecto ya trae configurado `-std=c++17` y `-static`. Con `-static`, `genomica.exe`
+  funciona también fuera de Code::Blocks (por ejemplo desde la interfaz gráfica) sin
+  pedir DLLs como `libstdc++-6.dll`.
+- Si Code::Blocks dice que no encuentra el compilador: **Settings → Compiler… →
+  Toolchain executables → Auto-detect**, y aceptar.
+
+#### 3. Opción B: scripts `.bat` (sin abrir Code::Blocks)
+
+Necesitan que `g++` esté en el `PATH`. Con el instalador de Code::Blocks, el compilador
+queda en `C:\Program Files\CodeBlocks\MinGW\bin`. Para agregarlo al `PATH`:
+**Inicio → "Editar las variables de entorno del sistema" → Variables de entorno… →
+Path → Editar → Nuevo** → pegar esa ruta → Aceptar, y abrir una terminal nueva.
+
+Luego, doble clic (o desde una terminal en la carpeta del proyecto):
+
+| Script | Qué hace |
+|---|---|
+| `compilar.bat` | Compila y genera `genomica.exe` |
+| `ejecutar.bat` | Abre el menú de texto con el archivo de HIV cargado (compila si hace falta) |
+| `gui.bat` | Abre la interfaz gráfica (compila si hace falta) |
+
+#### 4. Interfaz gráfica
+
+Después de compilar (opción A o B), doble clic en **`gui.bat`**, o en una terminal:
+
+```powershell
+python gui\app.py
 ```
 
-Compila si hace falta y abre la ventana. El archivo de `data/` se carga al iniciar.
+### Linux / macOS
 
-### 4. Ejemplo de uso (menú de texto)
+```bash
+# Ubuntu / Debian
+sudo apt install g++ make python3-tk
+# macOS (Xcode Command Line Tools trae g++/clang y make)
+xcode-select --install
 
-1. `make run` → se cargan las 218 secuencias en la tabla hash 1.
+make            # compila → ./genomica
+make run        # menú de texto con data/HIV2_ALL_2021_env_DNA.2000.fasta
+make gui        # interfaz gráfica
+make clean      # borra lo compilado
+```
+
+### Sin argumentos y con otros archivos
+
+- `genomica.exe` / `./genomica` sin argumentos empieza vacío: en la opción 1, **Enter**
+  carga el archivo de `data/`.
+- Para otro archivo: `genomica.exe ruta\archivo.fasta` (o `./genomica ruta/archivo.fasta`).
+- Las rutas relativas (como `data\...`) se resuelven desde la carpeta en la que se
+  ejecuta el programa, por eso conviene ejecutarlo desde la raíz del proyecto (los
+  `.bat` y Code::Blocks ya lo hacen).
+
+### Ejemplo de uso (menú de texto)
+
+1. Abrir el menú (F9 en Code::Blocks, `ejecutar.bat` o `make run`) → se cargan las 218
+   secuencias en la tabla hash 1.
 2. Opción **3** → ID `MAC.US.x.239.M33262` → muestra su secuencia.
 3. Opción **4** → mismo ID y `k = 3` → construye la tabla hash 2 (64 bins).
 4. Opción **6** → `ATG` → cuántas veces aparece.
@@ -51,14 +105,6 @@ Compila si hace falta y abre la ventana. El archivo de `data/` se carga al inici
 6. Opción **8** → `TCATTAGCAGTTAGCAGC` (ejemplo del enunciado) y `beta = 1` → tabla de
    pares y matriz de adyacencia. También se puede escribir el ID de una secuencia.
 7. Opción **0** → salir.
-
-### 5. Limpiar
-
-```bash
-make clean
-```
-
-Borra `build/` y el ejecutable.
 
 ### Datos
 
@@ -80,7 +126,7 @@ Borra `build/` y el ejecutable.
 
 ## Interfaz gráfica
 
-`make gui` abre una ventana con las mismas opciones del menú, agrupadas en 5 secciones:
+`gui.bat` (Windows) o `make gui` (Linux / macOS) abre una ventana con las mismas opciones del menú, agrupadas en 5 secciones:
 archivo y tabla hash 1, buscar secuencia, tabla de k-mers, k-mers más frecuentes y grafo
 de 2-mers (con el dibujo del grafo y la matriz de adyacencia como mapa de calor).
 
@@ -109,7 +155,12 @@ src/
 ├── grafo/                        (d) GrafoADN.h/.cpp (Khan et al., 2024)
 └── modoGUI/                      modo "--gui": comandos por stdin, respuestas JSON
 gui/
-└── app.py                    interfaz gráfica (Python + Tkinter, sin cálculos)
+└── app.py                        interfaz gráfica (Python + Tkinter, sin cálculos)
+data/
+└── HIV2_ALL_2021_env_DNA.2000.fasta
+analisis-genomico.cbp             proyecto de Code::Blocks
+compilar.bat, ejecutar.bat, gui.bat   scripts para Windows
+Makefile                          compilación en Linux / macOS
 ```
 
 ## Decisiones de implementación

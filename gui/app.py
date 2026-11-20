@@ -7,12 +7,16 @@ respuestas JSON que devuelve. Ver src/modoGUI/ModoGUI.h para la lista de comando
 
 Solo usa la biblioteca estándar de Python (tkinter viene incluido).
 
-    make gui            # compila el C++ y abre la ventana
-    python3 gui/app.py  # si ya está compilado
+    make gui            # Linux / macOS: compila el C++ y abre la ventana
+    gui.bat             # Windows (doble clic)
+    python gui/app.py   # cualquier sistema, si ya está compilado
+
+Si no encuentra el ejecutable, intenta compilarlo con g++.
 """
 
 import json
 import math
+import os
 import subprocess
 import sys
 import tkinter as tk
@@ -21,7 +25,11 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 RAIZ = Path(__file__).resolve().parent.parent
-EJECUTABLE = RAIZ / "genomica"
+EN_WINDOWS = os.name == "nt"
+EJECUTABLE = RAIZ / ("genomica.exe" if EN_WINDOWS else "genomica")
+FUENTES_CPP = ["src/main.cpp", "src/parser/LectorFasta.cpp", "src/linearProbing/TablaHash.cpp",
+               "src/doubleHashing/TablaKmers.cpp", "src/maxHeap/MaxHeap.cpp",
+               "src/grafo/GrafoADN.cpp", "src/modoGUI/ModoGUI.cpp"]
 ARCHIVO_POR_DEFECTO = RAIZ / "data" / "HIV2_ALL_2021_env_DNA.2000.fasta"
 
 # Paleta de colores
@@ -80,11 +88,13 @@ class MotorCpp:
 
     def __init__(self):
         if not EJECUTABLE.exists():
-            # Intentamos compilar automáticamente.
-            subprocess.run(["make"], cwd=RAIZ, check=False)
+            self.compilar()
         if not EJECUTABLE.exists():
-            raise RuntimeError("No se encontró ./genomica. Ejecuta 'make' primero.")
+            raise RuntimeError(f"No se encontró {EJECUTABLE.name}. Compila el proyecto primero "
+                               "(Code::Blocks, compilar.bat o make).")
 
+        # En Windows, sin esta opción se abriría una consola negra extra.
+        opciones = {"creationflags": subprocess.CREATE_NO_WINDOW} if EN_WINDOWS else {}
         self.proceso = subprocess.Popen(
             [str(EJECUTABLE), "--gui"],
             cwd=RAIZ,
@@ -94,7 +104,18 @@ class MotorCpp:
             text=True,
             encoding="utf-8",
             bufsize=1,  # Envía cada línea apenas se escribe
+            **opciones,
         )
+
+    @staticmethod
+    def compilar():
+        comando = ["g++", "-std=c++17", "-O2", *FUENTES_CPP, "-o", EJECUTABLE.name]
+        if EN_WINDOWS:
+            comando.append("-static")
+        try:
+            subprocess.run(comando, cwd=RAIZ, check=False)
+        except OSError:
+            pass
 
     def enviar(self, *partes):
         """Envía un comando y devuelve la respuesta como diccionario."""
@@ -272,6 +293,12 @@ class PaginaArchivo(Pagina):
             initialdir=RAIZ / "data", title="Elegir archivo FASTA",
             filetypes=[("FASTA", "*.fasta *.fa *.fas *.fna *.txt"), ("Todos", "*")])
         if ruta:
+            # Dentro del proyecto se usa la ruta relativa: así el C++ la abre bien
+            # aunque la carpeta del usuario tenga tildes o espacios (Windows).
+            try:
+                ruta = str(Path(ruta).resolve().relative_to(RAIZ))
+            except ValueError:
+                pass
             self.ruta.set(ruta)
             self.cargar()
 

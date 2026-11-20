@@ -4,6 +4,7 @@
 #include "../linearProbing/TablaHash.h"
 #include "../maxHeap/MaxHeap.h"
 #include "../parser/LectorFasta.h"
+#include <cctype>
 #include <cmath>
 #include <iostream>
 #include <sstream>
