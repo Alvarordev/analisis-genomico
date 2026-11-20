@@ -3,20 +3,67 @@
 Proyecto de programación en C++. Lee secuencias de ADN (HIV) en formato FASTA y las
 analiza usando tablas hash, un max-heap y un grafo de 2-mers.
 
-## Compilar y ejecutar
+## Cómo correr el proyecto
 
-Requiere `g++` (C++17) y `make`.
+### 1. Requisitos
+
+- `g++` con soporte para C++17 y `make`.
+- Para la interfaz gráfica: `python3` con `tkinter` (viene incluido en Python; en
+  Ubuntu/Debian, si falta: `sudo apt install python3-tk`).
+
+### 2. Compilar
+
+Desde la carpeta raíz del proyecto:
 
 ```bash
-make                            # compila y genera el ejecutable ./genomica
-make run                        # ejecuta con el archivo de prueba data/muestra.fasta
-./genomica ruta/archivo.fasta   # ejecuta con otro archivo FASTA
-make clean                      # borra lo compilado
+make
 ```
 
-> `data/muestra.fasta` tiene **datos de prueba sintéticos** (los dos ejemplos del
-> enunciado y 10 secuencias aleatorias). Para el análisis real se debe usar el
-> archivo FASTA de HIV del curso.
+Se genera el ejecutable `./genomica`. Los archivos intermedios quedan en `build/`.
+
+### 3. Ejecutar
+
+**Menú de texto**, con el archivo de HIV del curso ya cargado:
+
+```bash
+make run
+```
+
+Es lo mismo que `./genomica data/HIV2_ALL_2021_env_DNA.2000.fasta`. Para usar otro
+archivo: `./genomica ruta/archivo.fasta`. Sin argumentos (`./genomica`) el programa
+empieza vacío y el archivo se carga con la opción 1 (Enter usa el archivo de `data/`).
+
+**Interfaz gráfica:**
+
+```bash
+make gui
+```
+
+Compila si hace falta y abre la ventana. El archivo de `data/` se carga al iniciar.
+
+### 4. Ejemplo de uso (menú de texto)
+
+1. `make run` → se cargan las 218 secuencias en la tabla hash 1.
+2. Opción **3** → ID `MAC.US.x.239.M33262` → muestra su secuencia.
+3. Opción **4** → mismo ID y `k = 3` → construye la tabla hash 2 (64 bins).
+4. Opción **6** → `ATG` → cuántas veces aparece.
+5. Opción **7** → `n = 10` → los 10 3-mers más frecuentes (max-heap).
+6. Opción **8** → `TCATTAGCAGTTAGCAGC` (ejemplo del enunciado) y `beta = 1` → tabla de
+   pares y matriz de adyacencia. También se puede escribir el ID de una secuencia.
+7. Opción **0** → salir.
+
+### 5. Limpiar
+
+```bash
+make clean
+```
+
+Borra `build/` y el ejecutable.
+
+### Datos
+
+`data/HIV2_ALL_2021_env_DNA.2000.fasta`: 218 secuencias del gen *env* de HIV-2
+(archivo entregado por el curso).
 
 ## Menú (parte e)
 
@@ -31,17 +78,38 @@ make clean                      # borra lo compilado
 | 7 | Ver los n k-mers más frecuentes | c |
 | 8 | Grafo de 2-mers y su matriz de adyacencia | d |
 
+## Interfaz gráfica
+
+`make gui` abre una ventana con las mismas opciones del menú, agrupadas en 5 secciones:
+archivo y tabla hash 1, buscar secuencia, tabla de k-mers, k-mers más frecuentes y grafo
+de 2-mers (con el dibujo del grafo y la matriz de adyacencia como mapa de calor).
+
+**Todos los cálculos siguen en C++.** La interfaz (`gui/app.py`) está hecha con Tkinter,
+que viene incluido en Python, así que no hay que instalar nada. Funciona así:
+
+```
+gui/app.py  --- comandos por stdin --->  ./genomica --gui  (C++)
+            <--- una línea JSON -------
+```
+
+La ventana deja abierto el proceso `./genomica --gui` y le envía comandos (`cargar`,
+`kmers`, `top`, `grafo`, ...). El programa en C++ usa las mismas clases que el menú de
+texto y responde en JSON. La lista de comandos está en `src/modoGUI/ModoGUI.h`. Así el estado
+(las tablas hash) vive en C++ y el archivo FASTA se lee una sola vez.
+
 ## Estructura
 
 ```
 src/
-├── SecuenciaADN.h            struct con id y secuencia
-├── LectorFasta.h/.cpp        (a) parser FASTA
-├── TablaHashSecuencias.h/.cpp (b) tabla hash 1: linear probing
-├── TablaHashKmers.h/.cpp     (b) tabla hash 2: double hashing
-├── MaxHeap.h/.cpp            (c) max-heap para los k-mers más frecuentes
-├── GrafoADN.h/.cpp           (d) grafo de 2-mers (Khan et al., 2024)
-└── main.cpp                  (e) menú de texto
+├── main.cpp                      (e) menú de texto
+├── parser/                       (a) SecuenciaADN.h, LectorFasta.h/.cpp
+├── linearProbing/                (b) tabla hash 1: TablaHash.h/.cpp
+├── doubleHashing/                (b) tabla hash 2: TablaKmers.h/.cpp
+├── maxHeap/                      (c) MaxHeap.h/.cpp
+├── grafo/                        (d) GrafoADN.h/.cpp (Khan et al., 2024)
+└── modoGUI/                      modo "--gui": comandos por stdin, respuestas JSON
+gui/
+└── app.py                    interfaz gráfica (Python + Tkinter, sin cálculos)
 ```
 
 ## Decisiones de implementación
@@ -58,8 +126,9 @@ src/
 - Se ignoran las líneas vacías y las que empiezan con `;`.
 
 ### b) Tabla hash 1: ID → secuencia (linear probing)
-- Función hash polinomial: `h(s) = Σ s[i]·31^(m-1-i) mod 2^64`, luego `mod tamaño`.
-- Sondeo: `pos_i = (h + i) mod m`.
+- Función hash polinomial (método de Horner, a = 37) con el módulo en cada paso:
+  `h = (h·37 + c) mod m`.
+- Sondeo: `pos_i = (h + i) mod m`. Cada bin guarda key, valor y estado (VACIO, BORRADO, OCUPADO).
 - Tamaño inicial 10. Si al insertar el factor de carga `n/m` pasaría de 1, el
   nuevo tamaño es el **siguiente primo ≥ 2n**, así el factor queda en ~0.5. Después se
   reinsertan todos los elementos (rehash).
@@ -69,7 +138,9 @@ src/
   ventanas con letras distintas de A/C/G/T (por ejemplo `N`) se saltan.
 - Tamaño `m = 4^k` (k entre 1 y 10). Hay a lo más `4^k` k-mers distintos, así que la tabla
   no se llena.
-- `h1(s)` es el hash polinomial en base 31 y `h2(s) = 2·(hash_base37(s) mod m/2) + 1`.
+- `h1(s)` es el mismo Horner de la tabla 1 (a = 37, `mod m`). `h2(s)` usa Horner con
+  b = 31 y `mod m/2`, y devuelve `2·h + 1`. Usa otra base para que los k-mers que chocan
+  en `h1` no tengan también el mismo salto.
 - Sondeo: `pos_i = (h1 + i·h2) mod m`. Como `m` es potencia de 2, `h2` se fuerza a
   ser **impar**. Así `mcd(h2, m) = 1` y el sondeo recorre todas las casillas.
 
